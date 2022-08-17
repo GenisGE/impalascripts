@@ -1,0 +1,236 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+title: "sex chromosomes"
+author: "casia"
+date: "4/6/2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+params:
+  output_dir: /home/casi16/projects/impala/SexDeterminationImpala.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(tinytex.verbose = TRUE)
+```
+
+## Main Script
+
+
+```{echo=FALSE}
+
+library(ggplot2)
+library(matrixStats)
+fun<-function(f){
+    r <- read.table(f)
+    scafLen <- r[,2]
+    nReads <- r[,3]
+    norm<-sum(nReads[1:3])/sum(scafLen[1:3])
+    cbind(normReads=(nReads/scafLen) /norm,nReads,scafLen,r[,-c(3,4)])}
+
+res <- lapply(l <- list.files("/home/casia16/projects/impala/results/sexScaffolds/idxstat/",full.names=T),fun)
+names(res) <- basename(l)
+removedSamples<-c("2145.idxstat","1991.idxstat","2043.idxstat","12.idxstat","8514.idxstat","4653.idxstat")
+resFiltered=res[which(!names(res) %in% removedSamples)]
+
+minScafLen <- 100000
+keep <- resFiltered[[1]][,"scafLen"]>minScafLen & !is.nan(resFiltered[[1]][,"scafLen"])
+res2 <- lapply(resFiltered,function(x) x[keep,])
+mmax <- max(sapply(res2,function(x) max(x[,"normReads"])))
+mmax=3
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/1bplot.png", width = 1500, height = 600)
+par(mar = c(9, 9, 2, 3))
+plot(res2[[1]][,"scafLen"],res2[[1]][,"normReads"],log="x",xlab="",ylab="",ylim=c(0,mmax),type="l", cex.lab=2.8, cex.axis=2)
+sapply(1:length(res2),function(x) lines(res2[[x]][,3],res2[[x]][,1],col=x,pch=16,type="b",cex=.3))
+title(ylab="normalized depth", line=4, cex.lab=2, family="Calibri Light")
+title(xlab="scaffold length", line=6, cex.lab=2, family="Calibri Light")
+dev.off()
+
+#matrix of normalized depth
+normMat <- do.call(cbind,lapply(res2,function(x) x[,1]))
+rownames(normMat)=as.character(res2[[1]][,4])
+S <- cov(normMat)
+ev<-eigen(S)
+sum_var=sum(ev$values)
+varPc1=format(round(ev$values[1]/sum_var*100, 2), nsmall = 2)
+varPc2=format(round(ev$values[2]/sum_var*100, 2), nsmall = 2)
+varPc3=format(round(ev$values[3]/sum_var*100, 2), nsmall = 2)
+varPc4=format(round(ev$values[4]/sum_var*100, 2), nsmall = 2)
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/pca1.png", width = 800, height = 800)
+par(mar = c(9, 9, 2, 3))
+plot(pca<-as.data.frame(prcomp(normMat)$rotation[,1:2]),col=ifelse(pca[,1] < -0.1,"black","red"),pch = 19,  cex.lab=2, cex.axis=2, xlab="",ylab="",cex=1.5)
+title(ylab=paste("PC2(",varPc2,"%)",sep=""), line=5, cex.lab=2, family="Calibri Light")
+title(xlab=paste("PC1(",varPc1,"%)",sep=""), line=6, cex.lab=2, family="Calibri Light")
+legend("bottomright", 
+  legend = c("Group 1", "Group 2"), 
+  col = c("black","red"), 
+  #pch = c(17,19),
+  pch=19,
+  bty = "n", 
+  #pt.cex = 2, 
+  cex = 1.2, 
+  text.col = "black", 
+  #horiz = F , 
+  #inset = c(0.1, 0.1)
+  )
+dev.off()
+
+
+
+
+###
+meanSDDepthAll <- cbind(rowMeans(normMat,na.rm=T), rowSds(normMat,na.rm=T))
+colnames(meanSDDepthAll)=c("Mean","SD")
+rownames(meanSDDepthAll)=rownames(normMat)
+keep_v2 <- meanSDDepthAll[,2]<0.25
+meanDepth <- meanSDDepthAll[keep_v2,] #2x 7600ish
+
+pca<-as.data.frame(prcomp(normMat[keep_v2,])$rotation[,1:2])
+genderdat=read.table("/home/genis/impala/analyses/prevMapping/sexDepthsRatios/results/sexDetermination.txt")
+genderdat$id=paste(genderdat[,1],".idxstat",sep="")
+pca$id=rownames(pca)
+pca_gender=merge(pca,genderdat,by.x="id")
+plot(pca_gender[,2:3],col=pca_gender$V2,pch = 19,  cex.lab=2, cex.axis=2, xlab="",ylab="",cex=1.5)
+#title(ylab=paste("PC2(",varPc2,"%)",sep=""), line=5, cex.lab=2, family="Calibri Light")
+#title(xlab=paste("PC1(",varPc1,"%)",sep=""), line=6, cex.lab=2, family="Calibri Light")
+title(main="SD")
+##
+
+res2_2<-lapply(res2,function(x) x[keep_v2,])
+mmax <- max(sapply(res2_2,function(x) max(x[,"normReads"])))
+mmax=3
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/1cplot.png", width = 1500, height = 600)
+par(mar = c(9, 9, 2, 3))
+plot(res2_2[[1]][,"scafLen"],res2_2[[1]][,"normReads"],log="x",xlab="",ylab="",ylim=c(0,mmax),type="l", cex.lab=2.8, cex.axis=2)
+sapply(1:length(res2_2),function(x) lines(res2_2[[x]][,3],res2_2[[x]][,1],col=x,pch=16,type="b",cex=.3))
+title(ylab="normalized depth", line=4, cex.lab=2, family="Calibri Light")
+title(xlab="scaffold length", line=6, cex.lab=2, family="Calibri Light")
+dev.off()
+
+normMat_v2 <- do.call(cbind,lapply(res2_2,function(x) x[,1]))
+rownames(normMat_v2)=as.character(res2_2[[1]][,4])
+meanDepth <- rbind(rowMeans(normMat_v2,na.rm=T), rowSds(normMat_v2,na.rm=T))
+S <- cov(normMat_v2)
+ev<-eigen(S)
+sum_var=sum(ev$values)
+varPc1=format(round(ev$values[1]/sum_var*100, 2), nsmall = 2)
+varPc2=format(round(ev$values[2]/sum_var*100, 2), nsmall = 2)
+varPc3=format(round(ev$values[3]/sum_var*100, 2), nsmall = 2)
+varPc4=format(round(ev$values[4]/sum_var*100, 2), nsmall = 2)
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/pca2.png", width = 800, height = 800)
+par(mar = c(9, 9, 2, 3))
+plot(pca<-as.data.frame(prcomp(normMat_v2)$rotation[,1:2]),col=ifelse(pca[,1] > (-0.08) | pca[,2]>0.1,"black","red"),pch = 19,  cex.lab=2, cex.axis=2, xlab="",ylab="",cex=1.5)
+title(ylab=paste("PC2(",varPc2,"%)",sep=""), line=5, cex.lab=2, family="Calibri Light")
+title(xlab=paste("PC1(",varPc1,"%)",sep=""), line=6, cex.lab=2, family="Calibri Light")
+legend("bottomright", 
+  legend = c("Group 1", "Group 2"), 
+  col = c("black","red"), 
+  #pch = c(17,19),
+  pch=19,
+  bty = "n", 
+  #pt.cex = 2, 
+  cex = 1.2, 
+  text.col = "black", 
+  #horiz = F , 
+  #inset = c(0.1, 0.1)
+  )
+dev.off()
+
+
+#text(seq(1.5,end_point,by=2), par("usr")[3]-0.25, 
+ #    srt = 60, adj= 1, xpd = TRUE,
+  #   labels = paste(colnames(selectedScaf)), cex=1.4)
+
+
+
+## Initial Gender Grouping by according to PCA plot
+gender <- rep(NA,length(res2_2))
+names(gender) <- names(res2_2)
+gender[names(res2)] <- ifelse(pca[,1] > (-0.08) | pca[,2]>0.1,"sex1","sex2")
+gen=cbind(id=as.character(names(gender)),gender,sex=ifelse(gender=="sex1","male","female"))
+#write.table(gen,"/home/casia16/leopard/sexSample_newRemapping.txt",quote=F,col=F,row=F)
+
+mmax=3
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/2plot.png", width = 1500, height = 600)
+plot(res2_2[[1]][,"scafLen"],res2_2[[1]][,"normReads"],log="x",xlab="scaffold length",ylab="normalized depth",ylim=c(0,mmax),type="l",cex.lab=1.4, cex.axis=1.4)
+sapply(1:length(res2_2),function(x) lines(res2_2[[x]][,3],res2_2[[x]][,1],col=as.factor(gender)[x],pch=16,type="b",cex=.3))
+legend("topright",fill=1:2,c("sex1","sex2"))
+dev.off()
+
+cond1<-(meanDepth[1,]>0.25 & meanDepth[1,]<0.75) & (meanDepth[2,]>0.75 & meanDepth[2,]<1.25) & (abs(meanDepth[1,] - meanDepth[2,])>0.3)
+cond2<- (meanDepth[2,]>0.25 & meanDepth[2,]<0.75) & (meanDepth[1,]>0.75 & meanDepth[1,]<1.25) & (abs(meanDepth[1,] - meanDepth[2,])>0.3)
+nonAutosomes<-if(sum(cond1) > sum(cond2))cond1 else cond2
+#nonAutosomes <- abs(meanDepth[1,] - meanDepth[2,])>0.3
+selectedScaf=meanDepth[,nonAutosomes]
+colnames(selectedScaf)=rownames(normMat_v2)[nonAutosomes]
+
+write.table(cbind(rownames(normMat_v2)[nonAutosomes],t(selectedScaf)),"/home/casia16/projects/impala/results/sexScaffolds/selected_Sex_Scaf.txt",r=F,quote=F,col.names=c("scaf_name","avg_normalized_group1","avg normalized_group2"))
+
+weird_scaf<-meanSDDepthAll[(meanSDDepthAll[,2]>0.25 | meanSDDepthAll[,1]<0.25|meanSDDepthAll[,1]>1.5),]
+
+write.table(weird_scaf,"/home/casia16/projects/impala/results/sexScaffolds/selected_Weird_Scaf.txt",quote=F)
+
+
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/4plot.png", width = 1500, height = 600)
+par(mar = c(14, 4, 4, 1) + 0.1);       # This sets the plot margins
+barplot(xlab="",las=2,cex.names=.9,border=NA,col=c("black","red"),selectedScaf,beside=T,legend=c("sex1","sex2"),ylab="normalized depth")
+grid();
+title(xlab = "scaffold", line = 9);    # Add x axis title
+dev.off()
+
+scaf23=rownames(normMat_v2)[nonAutosomes]##with threshold 0.4
+
+keep23 <- res2[[1]][,"V1"] %in% scaf23
+res3 <- lapply(res2,function(x) x[keep23,])
+
+png("/home/casia16/projects/impala/results/sexScaffolds/plots/23Scafplot_scafLen.png", width = 1500, height = 600)
+plot(res3[[1]][,"scafLen"],res3[[1]][,"normReads"],log="x",xlab="",ylab="",ylim=c(0,mmax),type="l")
+sapply(1:length(res3),function(x) lines(res3[[x]][,3],res3[[x]][,1],col=x,pch=16,type="b",cex=.3))
+title(ylab="normalized depth", line=4, cex.lab=2, family="Calibri Light")
+title(xlab="scaffold length", line=6, cex.lab=2, family="Calibri Light")
+dev.off()
+```
+
+```{r, fig.cap=" Distribution Scaffold Normalized Depth After Removing Problematic Samples"}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/1bplot.png")
+
+```
+```{r, fig.cap="PCA Plot After removing 4 samples"}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/pca1.png")
+
+```
+
+```{r, fig.cap="PCA Plot After removing 4 samples"}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/pca2.png")
+
+```
+
+
+
+
+```{r, fig.cap="Distribution Scaffold Normalized Depth Group by Sex", out.width = '100%'}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/2plot.png")
+```
+
+
+
+```{r, fig.cap="Distribution Scaffold Normalized Depth Group by Sex", out.width = '100%'}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/2plot.png")
+```
+
+
+```{r, fig.cap="Scaffolds", out.width = '100%'}
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/4plot.png")
+```
+
+
+```{r, fig.cap="Mean and SD for Sex Scaffolds", out.width = '100%'}
+options(tinytex.verbose = TRUE)
+knitr::include_graphics("/home/casia16/projects/impala/results/sexScaffolds/plots/23Scafplot_scafLen.png")
+```

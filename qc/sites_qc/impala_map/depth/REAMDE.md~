@@ -1,0 +1,8 @@
+# remove outlier regions regarding depth across all samples (too low or too high).
+
+A more reproducible version of this pipeline can be found here:
+
+https://github.com/GenisGE/warthogscripts/tree/main/analyses/qc/sites_qc/depth
+
+
+
