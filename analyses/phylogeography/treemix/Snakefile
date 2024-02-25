@@ -1,0 +1,414 @@
+import sys
+
+from pathlib import Path
+
+################################################################################
+##############################       Setup       ###############################
+################################################################################
+
+
+if config == {}:
+    sys.exit("Please provide a config file using the '--configfile' flag!")
+
+
+OUTDIR = Path(config["outdir"])
+
+
+def get_safs(wildcards):
+    """ Helper input function to get SAF files by reference genome """
+    populations = config["input"]["populations"]
+    saf_dir = Path(config["input"]["reference"][wildcards.reference]["saf_dir"])
+    safs = expand(saf_dir / "{population}.saf.idx", population=populations)
+    return safs
+
+
+################################################################################
+##############################    Count input    ###############################
+################################################################################
+
+
+rule build:
+    """ Build binary to create GRoSS input from SAF files """
+    input:
+        src = "make_gross_input"
+    output:
+        bin = "bin/make_gross_input"
+    shell:
+        """
+        (cargo install --path {input.src} --root . &&
+            cargo clean --manifest-path {input.src}/Cargo.toml) 2> /dev/null
+        """
+
+
+def count_path(suffix, sep="_", dir="counts"):
+    """ Create path to count file based on shared prefix """
+    return OUTDIR / "results" / dir / ("{reference}" + sep + suffix)
+
+
+rule gross_input:
+    """ Make GRoSS input from SAF files """
+    input:
+        bin = rules.build.output.bin,
+        safs = get_safs
+    output:
+        counts = count_path("gross.txt")
+    shell:
+        """
+        {input.bin} {input.safs} > {output.counts}
+        """
+
+
+rule sites:
+    """ Count the number of sites, required e.g. for TreeMix block sizes """
+    input:
+        counts = rules.gross_input.output.counts
+    output:
+        txt = count_path("sites.txt")
+    shell:
+        """
+        tail -n+2 {input.counts} | wc -l > {output.txt}
+        """
+
+
+rule treemix_input:
+    """ Change GRoSS input format to TreeMix format """
+    input:
+        counts = rules.gross_input.output.counts
+    output:
+        counts = count_path("treemix.txt.gz")
+    shell:
+        """
+        cat {input.counts} | cut -f 4- | tr '\\t' ' ' | gzip > {output.counts}
+        """
+
+
+################################################################################
+##############################      TreeMix      ###############################
+################################################################################
+
+
+def treemix_path(suffix, sep="_", dir="treemix"):
+    """ Create path to TreeMix file based on shared prefix """
+    return OUTDIR / "results" / dir / ("{reference}_mig{mig}" + sep + suffix)
+
+
+def calc_block_size(path):
+    """ Read number of sites from file and estimate TreeMix block size """
+    with open(path, "r") as f:
+        sites = int(f.read())
+    max_ld = config["treemix"]["max_ld"]
+    genome_size = config["treemix"]["genome_size"]
+    block_size = int(max_ld / (genome_size / sites))
+    print(f"Block size: {block_size}", file=sys.stderr)
+    return block_size
+
+
+rule treemix:
+    """ Run TreeMix """
+    input:
+        counts = rules.treemix_input.output.counts,
+        sites = rules.sites.output.txt
+    output:
+        files = multiext(str(treemix_path("rep{rep}")),
+                         ".cov.gz", ".covse.gz", ".edges.gz", ".llik",
+                         ".modelcov.gz", ".treeout.gz", ".vertices.gz")
+    params:
+        root = config["treemix"]["root"],
+        stem = lambda wildcards, output: output.files[0].removesuffix(".cov.gz")
+    run:
+        block_size = calc_block_size(input.sites)
+        shell(
+            """
+            treemix \
+                -i {input.counts} \
+                -o {params.stem} \
+                -root {params.root} \
+                -k {block_size} \
+                -m {wildcards.mig} \
+                -seed {wildcards.rep} \
+            > /dev/null 2>&1
+            """
+        )
+
+
+rule download_treemix_plotting:
+    """ Download R code to plot Treemix """
+    output:
+        r = "bin/treemix/plotting_funcs.R",
+        tar = temp("tmp/treemix-1.13.tar.gz")
+    params:
+        location = "https://bitbucket.org/nygcresearch/treemix/downloads/treemix-1.13.tar.gz",
+        target_dir = lambda wildcards, output: Path(output.r).parents[0]
+    shell:
+        """
+        wget -q -O {output.tar} {params.location} &&
+        tar -x \
+            --strip-components 2 \
+            -C {params.target_dir} \
+            -f {output.tar} \
+            treemix-1.13/src/plotting_funcs.R
+        """
+
+
+rule plot_treemix:
+    """ Plot TreeMix tree and residuals """
+    input:
+        files = rules.treemix.output.files,
+        r = rules.download_treemix_plotting.output.r
+    output:
+        pdf = treemix_path("rep{rep}.pdf"),
+        order = temp(treemix_path("rep{rep}_order.tmp.txt"))
+    params:
+        populations = config["input"]["populations"],
+        stem = lambda wildcards, input: input.files[0].removesuffix(".cov.gz")
+    shell:
+        """
+        echo {params.populations} | tr ' ' '\\n' > {output.order} &&
+        Rscript -e \
+            'pdf("{output.pdf}", height = 7, width = 14); \
+            source("{input.r}"); \
+            par(mfrow = c(1, 2)); \
+            plot_tree("{params.stem}"); \
+            plot_resid("{params.stem}", "{output.order}"); \
+            dev.off();' \
+        > /dev/null 2>&1
+        """
+
+
+rule rank_treemix_likelihood:
+    """ Rank TreeMix replicates by log likelihood """
+    input:
+        expand(rules.treemix.output.files[3],
+               rep=range(1, config["treemix"]["reps"] + 1),
+               allow_missing=True)
+    output:
+        tsv = treemix_path("likelihood.tsv", dir="treemix_likelihood")
+    shell:
+        """
+        Rscript scripts/rank_likelihood.R {input} > {output.tsv}
+        """
+
+
+rule best_treemix:
+    """ Symlink best TreeMix run to separate directory """
+    input:
+        tsv = rules.rank_treemix_likelihood.output.tsv,
+        pdfs = expand(rules.plot_treemix.output.pdf,
+                      rep=range(1, config["treemix"]["reps"] + 1),
+                      allow_missing=True)
+    output:
+        symlinks = multiext(str(treemix_path("", sep="", dir="treemix_best")),
+                            ".cov.gz", ".covse.gz", ".vertices.gz",
+                            ".edges.gz", ".llik", ".modelcov.gz",
+                            ".treeout.gz", ".pdf")
+    params:
+        target_dir = lambda wildcards, output:
+            Path(output.symlinks[0]).parents[0]
+    shell:
+        """
+        stem=$(head -n 2 {input.tsv} | tail -n 1 | cut -f 1); \
+        for file in ${{stem}}.*; do \
+            name=$(sed 's/_rep[0-9]\+//' <<< $(basename $file)); \
+            link="{params.target_dir}/$name"; \
+            ln -s $(realpath $file) $link; \
+        done
+        """
+
+
+################################################################################
+##############################       GRoSS       ###############################
+################################################################################
+
+
+def gross_path(suffix, sep="_", dir="gross"):
+    """ Create path to GRoSS file based on shared prefix """
+    return OUTDIR / "results" / dir / ("{reference}_mig{mig}_{graph}" + sep + suffix)
+
+
+rule download_gross:
+    """ Download the GRoSS source code """
+    output:
+        gross = "bin/gross/GRoSS.R",
+        helper1 = "bin/gross/LoadFiles.R",
+        helper2 = "bin/gross/MultiBranchFunc.R"
+    params:
+        location = "https://raw.githubusercontent.com/FerRacimo/GRoSS/master/",
+        sed_target_dir = lambda wildcards, output:
+            str(Path(output.gross).parents[0]).replace("/", "\/")
+    shell:
+        """
+        (for file in {output}; do
+            stem=$(basename $file);
+            curl {params.location}$stem > bin/gross/$stem;
+        done) 2> /dev/null;
+        sed -i -E \
+            's/(MultiBranchFunc|LoadFiles)/{params.sed_target_dir}\/\\1/' \
+            {output.gross}
+        """
+
+
+rule install_gross_dependencies:
+    """ Install GRoSS R dependencies """
+    output:
+        flag = "flags/gross_dependencies.flag"
+    shell:
+        """
+        (Rscript scripts/install_gross_dependencies.R &&
+        touch {output.flag}) > /dev/null 2>&1
+        """
+
+
+rule treemix_to_gross:
+    """ Convert TreeMix output graph to GRoSS input graph """
+    input:
+        vertices = rules.best_treemix.output.symlinks[2],
+        edges = rules.best_treemix.output.symlinks[3],
+    output:
+        graph = OUTDIR / "results/gross/{reference}_mig{mig}_treemixgraph.graph"
+    shell:
+        """
+        Rscript scripts/treemix_to_gross.R \
+            {input.vertices} {input.edges} > {output.graph}
+        """
+
+
+def find_graph(wildcards):
+    """
+    Input function to find graph for GRoSS,
+    which is either automated TreeMix graph or a hand-crafted graph
+    """
+    if wildcards.graph == "treemixgraph":
+        graph = rules.treemix_to_gross.output.graph
+    else:
+        graph = OUTDIR / f"graphs/{wildcards.graph}.graph"
+    return str(graph)
+
+
+rule plot_gross_graph:
+    """ Plot the GRoSS input graph """
+    input:
+        graph = find_graph
+    output:
+        pdf = gross_path(".pdf", sep="")
+    shell:
+        """
+        (Rscript scripts/plot_gross_graph.R {input.graph} {output.pdf}) \
+            > /dev/null 2>&1
+        """
+
+
+rule gross:
+    """ Run GRoSS """
+    input:
+        graph = find_graph,
+        counts = rules.gross_input.output.counts,
+        dependencies = rules.install_gross_dependencies.output.flag,
+        src = rules.download_gross.output
+    output:
+        tsv = gross_path(".tsv", sep="")
+    wildcard_constraints:
+        mig = "[0-9]+|manual"
+    shell:
+        """
+        Rscript {input.src[0]} \
+                -e {input.counts} -r {input.graph} -o {output.tsv}
+        """
+
+
+rule filter_gross:
+    """
+    Remove chi-squared statistic columns from GRoSS output,
+    and extract sites with p-value less than or equal to 1e-5
+    """
+    input:
+        tsv = rules.gross.output.tsv,
+    output:
+        tsv = gross_path("filtered.tsv")
+    shell:
+        """
+        n_cols=$(head -n 1 {input.tsv} | awk '{{print NF}}');
+        first_pval_col=$((4 + (${{n_cols}} - 3) / 2));
+
+        head -n 1 {input.tsv} | cut -f 1-3,${{first_pval_col}}- > {output.tsv};
+
+        cat {input.tsv} | \
+            cut -f 1-3,${{first_pval_col}}- |\
+            grep 'e-\|\s0\.00' \
+            >> {output.tsv}
+        """
+
+
+rule clean_gross:
+    """
+    Filter p-values < 0.01, convert to long format,
+    identify potential candidate sites
+    """
+    input:
+        tsv = rules.filter_gross.output.tsv
+    output:
+        tsv = gross_path("cleaned.tsv")
+    shell:
+        """
+        Rscript scripts/clean_gross.R {input.tsv} {output.tsv}
+        """
+
+
+rule identify_gross_peaks:
+    """ Identify most promising candidate sites """
+    input:
+        tsv = rules.clean_gross.output.tsv
+    output:
+        tsv = gross_path("candidates.tsv")
+    shell:
+        """
+        Rscript scripts/identify_gross_candidates.R {input.tsv} {output.tsv}
+        """
+
+
+rule plot_gross_sites:
+    """ Plot Manhattan plot of GRoSS p-values """
+    input:
+        tsv = rules.clean_gross.output.tsv,
+    output:
+        png = gross_path("sites.png"),
+    shell:
+        """
+        Rscript scripts/plot_gross_sites.R {input.tsv} {output.png}
+        """
+
+
+rule plot_gross_qq:
+    """ Plot QQ-plot of GRoSS chi-squared statistics """
+    input:
+        tsv = rules.gross.output.tsv,
+    output:
+        png = gross_path("qq.png")
+    shell:
+        """
+        Rscript scripts/plot_gross_qq.R {input.tsv} {output.png}
+        """
+
+
+################################################################################
+##############################        All        ###############################
+################################################################################
+
+def config_expand(name):
+    treemix = expand(name,
+                     reference=list(config["input"]["reference"]),
+                     mig=config["treemix"]["migrations"],
+                     graph=["treemixgraph"])
+    manual = expand(name,
+                    reference=list(config["input"]["reference"]),
+                    mig="manual",
+                    graph=config["gross"]["manual_graphs"])
+    return treemix + manual
+
+
+rule all:
+    """ Convenience rule to generate all desired results """
+    input:
+        config_expand(rules.plot_gross_graph.output.pdf),
+        config_expand(rules.plot_gross_sites.output.png),
+        config_expand(rules.plot_gross_qq.output.png),
+        config_expand(rules.identify_gross_peaks.output.tsv),

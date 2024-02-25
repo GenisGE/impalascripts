@@ -1,0 +1,18 @@
+outdir: impala
+input:
+    populations:
+        [Chobe, Etosha, Kafue, LakeMburu, Luangwa, ManaPools,
+         MasaiMara, Ovita, Samburu, Selous, Shangani, Tsavo, Ugalla]
+    reference:
+        impala:
+            saf_dir: /emc/genis/impala/sfss_fst/impalaMap/results/safs/
+        goat:
+            saf_dir: /emc/genis/impala/pbs/results/safs/
+treemix:
+    genome_size: 3000000000
+    max_ld: 5000000
+    migrations: [0, 1, 2, 3, 4, 5]
+    reps: 25
+    root: Etosha
+gross:
+    manual_graphs: []

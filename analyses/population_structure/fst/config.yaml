@@ -1,0 +1,6 @@
+info: /home/genis/impala/info_files/impala_samples_info_good.tsv
+sites: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/autosome_map_inb_rep_dep.regions
+chroms: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/impalaRefAutosomeScaffoldsUsed.txt
+anc: /davidData/genis/impala/ref/impala_draft/Impala.scaf.sorted.gz
+small_sites: /home/genis/impala/info_files/downsampled_sites/impalaMap/autosome_map_inb_rep_dep_1mb.regions
+small_chroms: /home/genis/impala/info_files/downsampled_sites/impalaMap/impalaRef1mbChrsUsed.txt
