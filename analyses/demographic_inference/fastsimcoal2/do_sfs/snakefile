@@ -1,0 +1,171 @@
+# snakemake to estimate 2dsfs, sfs and fst between popualtions pairs.
+# version 2 intention is to do a more efficient version which will use downsampled saf
+
+
+import pandas as pd
+import itertools as it
+
+ANGSD="/kellyData/home/genis/software/angsd/angsd"
+WINSFS="/home/genis/.cargo/bin/winsfs"
+RSCRIPT="Rscript"
+PYTHON="python3"
+FORMATDADI="scripts/formatToDadi.R"
+SPLITFORMATDADI="scripts/splitFormatToDadi.R"
+FOLD2DSFS="scripts/fold2dsfs.py"
+FORMATTOFSC="scripts/formatToFsc.R"
+
+#OUTMAIN="/emc/genis/impala/sfss_fst/impalaMap/results"
+
+OUTMAIN=config["outmain"]
+N_SPLITS=config["n_splits"]
+infofile=config['info']
+
+info = pd.read_table(infofile)
+pops = list(info.my_locality2.unique()) # here the pop column in info file is called my_locality2. it is very likely in future uses we want to change that
+#pops = ["Chobe",  "Ugalla"]
+
+wildcard_constraints:
+    p1 = "|".join([x.split("-")[0] for x in config["pop_pairs"]]),
+    p2 = "|".join([x.split("-")[1] for x in config["pop_pairs"]])
+
+rule all:
+    input:
+        expand(os.path.join(OUTMAIN, "2dsfs_splits_fscformat", "split_{i}", "{pop_pairs}_split_{i}_folded_fscformat.sfs"),
+                pop_pairs = config["pop_pairs"], i = range(1, N_SPLITS + 1)),
+        expand(os.path.join(OUTMAIN, "2dsfs", "{pop_pairs}_split.sfs"),
+                pop_pairs = config["pop_pairs"]),
+        expand(os.path.join(OUTMAIN, "2dsfs_fscformat", "{pop_pairs}_folded_fscformat.sfs"),
+                pop_pairs = config["pop_pairs"])
+
+        
+rule do_bam_lists:
+    input:
+        config['info']
+    output:
+        expand(os.path.join(OUTMAIN, "bamlists", "bams_{p}.list"), p = pops),
+        expand(os.path.join(OUTMAIN, "bamlists", "samples_{p}.list"), p = pops)
+    run:
+        for p in pops:
+            bams = info.loc[info.my_locality2==p].bams_impala_map
+            outfile1 = os.path.join(OUTMAIN, "bamlists", "bams_{}.list".format(p))
+            ids = info.loc[info.my_locality2==p].Serial_number
+            outfile2 = os.path.join(OUTMAIN, "bamlists", "samples_{}.list".format(p))
+            bams.to_csv(outfile1, header=False, index = False)
+            ids.to_csv(outfile2, header=False, index = False)
+
+
+
+rule do_saf:
+    input:
+        bamlist = ancient(os.path.join(OUTMAIN, "bamlists", "bams_{p}.list"))
+    output:
+        saf = os.path.join(OUTMAIN, "safs", "{p}.saf.gz"),
+        saf_idx = os.path.join(OUTMAIN, "safs", "{p}.saf.idx"),
+        saf_pos = os.path.join(OUTMAIN, "safs", "{p}.saf.pos.gz")
+    params:
+        anc = config['anc'],
+        outprefix = os.path.join(OUTMAIN, "safs", "{p}"),
+        sites = config['sites'],
+        rf = config['chroms'],
+        minQ = 30,
+        minMapQ = 30
+    log: os.path.join(OUTMAIN, "safs", "{p}.arg")
+    threads: 3
+    shell: "{ANGSD} -b {input.bamlist} -gl 2 -dosaf 1 -anc {params.anc} -out {params.outprefix} -P {threads} -rf {params.rf} -sites {params.sites} -minQ {params.minQ} -minMapQ {params.minMapQ}"
+
+
+rule do_2dsfs:
+    input:
+        saf1 = os.path.join(OUTMAIN, "safs", "{p1}.saf.idx"),
+        saf2 = os.path.join(OUTMAIN, "safs", "{p2}.saf.idx"),
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}.sfs")
+    threads: 60
+    shell: """
+        {WINSFS} --threads {threads} {input.saf1} {input.saf2} > {output.sfs}
+    """
+
+
+rule do_splits_2dsfs:
+    input:
+        saf1 = os.path.join(OUTMAIN, "safs", "{p1}.saf.idx"),
+        saf2 = os.path.join(OUTMAIN, "safs", "{p2}.saf.idx"),
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}.sfs")
+    output:
+        sfs_splits = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}_split.sfs")
+    params:
+        splits = N_SPLITS,
+    threads: 60
+    shell: """
+        {WINSFS} split --splits {params.splits} --sfs {input.sfs} --threads {threads} {input.saf1} {input.saf2} > {output.sfs_splits}
+    """
+
+
+rule subtract_split_sfs:
+    input:
+        sfs_splits = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}.sfs")
+    output:
+        expand(os.path.join(OUTMAIN, "2dsfs", "{{p1}}-{{p2}}_{i}out.sfs"), i=range(1, N_SPLITS + 1))
+    shell: """
+        {RSCRIPT} {SPLITFORMATDADI} {input.sfs_splits}
+    """
+
+
+rule sfs_to_dadi:
+    input:
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}.sfs")
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}_dadiformat.sfs")
+    shell: """
+    {RSCRIPT} {FORMATDADI} {input.sfs}
+    """
+
+rule fold_sfs:
+    input:
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}_dadiformat.sfs")
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs_folded", "{p1}-{p2}_folded.sfs")
+    shell: """
+        {PYTHON} {FOLD2DSFS} {input.sfs} {output.sfs}
+    """
+
+
+
+rule format_to_fsc:
+    """ 
+    create fastsimcoal2 matrix format. note the script is hardcoded for impala population order (popord argument).
+    it will need modification if applied to other dataset
+"""
+    input:
+        sfs = os.path.join(OUTMAIN, "2dsfs_folded", "{p1}-{p2}_folded.sfs")
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs_fscformat", "{p1}-{p2}_folded_fscformat.sfs")
+    shell: """
+        {RSCRIPT} {FORMATTOFSC} {input.sfs} {output.sfs} {wildcards.p1} {wildcards.p2}
+    """
+
+
+
+rule fold_sfs_split:
+    input:
+        sfs = os.path.join(OUTMAIN, "2dsfs", "{p1}-{p2}_{i}out.sfs")
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs_splits_folded", "{p1}-{p2}_split_{i}_folded.sfs")
+    shell: """
+        {PYTHON} {FOLD2DSFS} {input.sfs} {output.sfs}
+    """
+
+
+rule format_to_fsc_split:
+    """ 
+    create fastsimcoal2 matrix format. note the script is hardcoded for impala population order (popord argument).
+    it will need modification if applied to other dataset
+"""
+    input:
+        sfs = os.path.join(OUTMAIN, "2dsfs_splits_folded", "{p1}-{p2}_split_{i}_folded.sfs")
+    output:
+        sfs = os.path.join(OUTMAIN, "2dsfs_splits_fscformat", "split_{i}", "{p1}-{p2}_split_{i}_folded_fscformat.sfs")
+    shell: """
+        {RSCRIPT} {FORMATTOFSC} {input.sfs} {output.sfs} {wildcards.p1} {wildcards.p2}
+    """
+

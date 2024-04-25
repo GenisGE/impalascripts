@@ -1,0 +1,13 @@
+ingroup: common
+results_subdir: impala
+call_parameters:
+  bq: 30
+  mq: 30
+ref:
+  name: Impala
+  fa: /davidData/genis/impala/ref/impala_draft/Impala.scaf.sorted.gz
+  fai: /davidData/genis/impala/ref/impala_draft/Impala.scaf.sorted.gz.fai
+sites: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/autosome_map_inb_rep_dep.bed
+tsv: tsvs/impala2.tsv
+populations:
+tmp_dir: results/impala/tmp

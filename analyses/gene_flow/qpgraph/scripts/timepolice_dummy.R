@@ -1,0 +1,3 @@
+timepolice <- function(...) {
+  TRUE
+}

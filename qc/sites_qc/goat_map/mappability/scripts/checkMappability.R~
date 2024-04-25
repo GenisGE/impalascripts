@@ -1,0 +1,3 @@
+library(data.table)
+
+mp <- fread("/home/genis/impala/localSitesQC/mappability/mappability_V1Goat_K100_E2.bedgraph", data.table=F,h=F)

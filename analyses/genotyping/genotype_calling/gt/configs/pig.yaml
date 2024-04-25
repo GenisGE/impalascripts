@@ -1,0 +1,10 @@
+ingroup: pig
+results_subdir: pig
+ref:
+  name: Warthog
+  fa: /steveData/anna/piggy/reference_genomes/warthog/warthog.fa 
+  fai: /steveData/anna/piggy/reference_genomes/warthog/warthog.fa.fai
+sites: /steveData/anna/piggy/ABP_RRH_CWH/warthog.angsd.file 
+tsv: tsvs/pig.tsv
+populations:
+tmp_dir: results/pig/tmp

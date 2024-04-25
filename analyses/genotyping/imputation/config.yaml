@@ -1,0 +1,15 @@
+chroms: /home/genis/impala/info_files/autoChrGoat.txt
+outbig: /emc/genis/impala/vcf/vcf_goat
+outmain: results
+ref: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz
+bamlist: /home/genis/impala/analyses/goatMapV3/call_genos/bams.list
+samplelist: /home/genis/impala/analyses/goatMapV3/call_genos/samples.list
+grouplist: /home/genis/impala/analyses/goatMapV3/call_genos/groups.list
+filters:
+ bed: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/autosome_map_inb_rep_dep.bed
+ minq: 30
+ min_mapq: 30
+ minmaf: 0.05
+imputed_thres:
+ minr2: 0.9
+ mingp: 0.9

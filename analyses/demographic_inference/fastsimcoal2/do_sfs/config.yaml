@@ -1,0 +1,16 @@
+outmain: results
+
+info: /kellyData/home/genis/impala/analyses/impalaMap/fastsimcoal/do_sfs/impala_samples_info_good_fixedpaths.tsv
+sites: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/autosome_map_inb_rep_dep.regions
+chroms: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/impalaRefAutosomeScaffoldsUsed.txt
+anc: /davidData/data/genis/impala/ref/impala_draft/Impala.scaf.sorted.gz
+
+n_splits: 50
+
+pop_pairs:
+ - Chobe-Etosha
+ - Chobe-MasaiMara
+ - Chobe-Shangani
+ - Etosha-MasaiMara
+ - Etosha-Shangani
+ - MasaiMara-Shangani

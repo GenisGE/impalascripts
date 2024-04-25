@@ -1,0 +1,52 @@
+
+
+args <- commandArgs(trailingOnly=T)
+
+
+indir <- args[1]
+p <- args[2]
+outpng <- args[3]
+
+
+load_sfs <- function(f){
+    sfs <- scan(f, what=4)
+    sfs <- sfs/sum(sfs)
+    sfs
+}
+
+
+load_fold_sfs <- function(f){
+    sfs <- scan(f, what=4)
+    sfs <- sfs[1:ceiling(length(sfs)/2)] + c(rev(sfs)[1:floor(length(sfs)/2)],0)
+#    sfs <- sfs[-1]
+    sfs <- sfs/sum(sfs)
+    }
+
+
+files <- list.files(indir, paste0(p,"_[0-9]f_degenerate.sfs"), full.names=T)
+sfss <- lapply(files, load_sfs)
+names(sfss) <- gsub(".sfs","",sub(paste0(p,"_"), "", basename(files)))
+
+
+m <- do.call("rbind", sfss)
+
+bitmap(outpng, h=6, w=6, res=300)
+barplot(m[,-1], beside=T, col=2:4, main=paste(p, "sfs in coding sites by degeneracy"), names.arg=1:(ncol(m)-1), xlab="Derived Allele Count")
+legend("topright", fill=2:4, legend=rownames(m))
+dev.off()
+
+
+
+if(FALSE){
+files <- list.files(indir, paste0(p,"_[0-9]f_degenerate.sfs"), full.names=T)
+sfss <- lapply(files, load_fold_sfs)
+names(sfss) <- gsub(".sfs","",sub(paste0(p,"_"), "", basename(files)))
+
+
+m <- do.call("rbind", sfss)
+
+bitmap(outpng, h=6, w=6, res=300)
+barplot(m[,-1], beside=T, col=2:4, main=paste(p, "folded sfs in coding sites by degeneracy"), names.arg=1:(ncol(m)-1), xlab="Minor Allele Count")
+legend("topright", fill=2:4, legend=rownames(m))
+dev.off()
+}

@@ -1,0 +1,72 @@
+allele_support:
+ - '2'
+depths:
+  '1508':
+  - 6
+  - 34
+  '1621':
+  - 6
+  - 20
+  '2041':
+  - 6
+  - 18
+  '2076':
+  - 6
+  - 18
+  '3':
+  - 6
+  - 20
+  '3934':
+  - 6
+  - 16
+  '44':
+  - 6
+  - 20
+  '4555':
+  - 6
+  - 22
+  '4558':
+  - 6
+  - 18
+  '4658':
+  - 6
+  - 18
+  '54':
+  - 6
+  - 24
+  '5454':
+  - 6
+  - 20
+  '7829':
+  - 6
+  - 18
+  '939':
+  - 6
+  - 20
+  'rgp':
+   - 12
+   - 76
+samples:
+  '1508': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/1508.bam
+  '1621': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/1621.bam
+  '2041': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/2041.bam
+  '2076': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/2076.bam
+  '3': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/3.bam
+  '3934': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/3934.bam
+  '44': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/44.bam
+  '4555': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/4555.bam
+  '4558': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/4558.bam
+  '4658': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/4658.bam
+  '54': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/54.bam
+  '5454': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/5454.bam
+  '7829': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/7829.bam
+  '939': /davidData/genis/impala/qc_mapping_collapse/impalaRef/bam/939.bam
+  'rgp': /davidData/genis/impala/data/RGP/impalaMap/bam/SAMN08714480_5lib_clean.bam
+outmain: results
+plot_params:
+ g: 5.7
+ mu: 1.41e-8
+beds:
+ all_filters: /home/genis/impala/localSitesQC/impalaMap/allRegionsFiles/autosome_map_inb_rep_dep.bed
+bootstraps: 100
+chroms: /home/genis/impala/analyses/impalaMap/psmc/impalaScaffoldsUse.txt

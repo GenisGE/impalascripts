@@ -1,0 +1,23 @@
+outmain: results
+scriptsdir: scripts
+ref: /davidData/genis/impala/ref/goat/GCF_001704415.1_ARS1_genomic.fna
+ref_renamed: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz
+gff: /davidData/genis/impala/ref/goat/GCF_001704415.1_ARS1_genomic.gff
+db: Gnomon
+mask: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/autosome_map_inb_rep_dep.bed
+rename_chrs: /davidData/genis/impala/ref/goat/rename_chrs.list
+chromlist: /davidData/genis/impala/ref/goat/goat_ref_renamed_autosomes.list
+pops:
+ MasaiMara: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_MasaiMara.list
+ Shangani: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Shangani.list
+ Etosha: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Etosha.list
+ Samburu: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Samburu.list
+ Chobe: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Chobe.list
+ Ugalla: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Ugalla.list
+ Selous:  /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Selous.list
+ Tsavo: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Tsavo.list
+ ManaPools: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_ManaPools.list
+ Kafue: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Kafue.list
+ Luangwa: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Luangwa.list
+ LakeMburu: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_LakeMburu.list
+ Ovita: /home/genis/impala/analyses/goatMapV3/pbs/results/bamlists/bams_Ovita.list

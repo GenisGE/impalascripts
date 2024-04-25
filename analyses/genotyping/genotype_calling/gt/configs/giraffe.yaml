@@ -1,0 +1,11 @@
+call_parameters:
+  baq: with # bcftools BAQ setting to use, "with", "without", or "partial" (recommended)
+ingroup: GCam
+results_subdir: giraffe
+ref:
+  name: RothschildsGiraffe
+  fa: /jbod1/mikkel/projects/202103_africa1k/giraffes/raw_bams/genomes/RothschildsGiraffe.fasta
+  fai: /jbod1/mikkel/projects/202103_africa1k/giraffes/raw_bams/genomes/RothschildsGiraffe.fasta.fai
+sites: /home/krishang/temp/testhew/put_together/bed/autosome_rep_het_dep.bed
+tsv: tsvs/giraffe.tsv
+populations: tsvs/giraffe_populations.tsv

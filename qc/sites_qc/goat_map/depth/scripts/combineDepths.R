@@ -1,0 +1,48 @@
+library(data.table)
+
+highdepth <- "/home/genis/impala/localSitesQC/depth/output/highDepth"
+lowdepth <- "/home/genis/impala/localSitesQC/depth/output/lowDepth"
+
+#alldepth <- "/home/genis/impala/localSitesQC/depth/output/allDepth"
+
+chrs <- scan("/home/genis/impala/info_files/goatChrsAutoandX.txt", what="dl")
+
+tl <- numeric(5001)
+th <- numeric(5001)
+#ta <- numeric(5001)
+
+for(chr in chrs){
+
+    lglobal <- scan(paste0(lowdepth,"/",chr,"_lowDepth.depthGlobal"), what=3)
+    hglobal <- scan(paste0(highdepth,"/",chr,"_highDepth.depthGlobal"), what=3)
+
+    allglobal <- lglobal + hglobal
+
+    tl <- tl + lglobal
+    th <- th + hglobal
+#    ta <- ta + allglobal
+    
+#    write(allglobal, paste0(alldepth,"/",chr,"_allDepth.depthGlobal"), ncolumns=length(allglobal), sep="\t")
+    
+    l <- fread(paste0(lowdepth,"/",chr,"_lowDepth.pos.gz"))[,2:3]
+    h <- fread(paste0(highdepth,"/",chr,"_highDepth.pos.gz"))[,2:3]
+
+    hl <- merge(l,h,by='pos',all=T)
+
+    hl$totDepth.x[is.na(hl$totDepth.x)] <- 0
+    hl$totDepth.y[is.na(hl$totDepth.y)] <- 0
+
+#    alldp <- data.frame(chr=rep(chr,nrow(hl)),
+#                        pos=hl$pos,
+#                        totDepthAll = hl$totDepth.x + hl$totDepth.y,
+#                        totDepthLow = hl$totDepth.x,
+#                        totDepthHigh = hl$totDepth.y)
+
+#    write.table(alldp, gzfile(paste0(alldepth,"/",chr, "_allDepth.pos.gz")), quote=F, row.names=F, sep="\t")
+
+    
+}
+
+write(tl, paste0(lowdepth,"/allChrs_lowDepth.depthGlobal"), ncolumns=length(tl), sep="\t")
+write(th, paste0(highdepth,"/allChrs_highDepth.depthGlobal"), ncolumns=length(th), sep="\t")
+#write(ta, paste0(alldepth,"/allChrs_allDepth.depthGlobal"), ncolumns=length(ta), sep="\t")

@@ -1,0 +1,5 @@
+bamlist: /home/genis/impala/info_files/bamsImpalaGoatMappedCollapsedV0.list
+perfect: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/54.bam
+ref: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz
+sites: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/autosome_map_inb_rep_dep.region
+chroms: /home/genis/impala/info_files/autoChrGoat.txt

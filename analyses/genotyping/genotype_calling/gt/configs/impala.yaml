@@ -1,0 +1,13 @@
+ingroup: common
+results_subdir: impala
+call_parameters:
+  bq: 30
+  mq: 30
+ref:
+  name: Goat
+  fa: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz
+  fai: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz.fai
+sites: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/autosome_map_inb_rep_dep.bed
+tsv: tsvs/impala.tsv
+populations:
+tmp_dir: results/impala/tmp

@@ -1,0 +1,11 @@
+call_parameters:
+  baq: with # bcftools BAQ setting to use, "with", "without", or "partial" (recommended)
+ingroup: GCam
+results_subdir: giraffe
+ref:
+  name: Okapi
+  fa: /jbod1/mikkel/projects/202103_africa1k/giraffes/raw_bams/genomes/Okapi.fasta
+  fai: /jbod1/mikkel/projects/202103_africa1k/giraffes/raw_bams/genomes/Okapi.fasta.fai
+sites: /home/genis/africa1kg/giraffe/sites_filters/okapi_map/put_together/bed/sorted_autosome_rep_het_dep.bed
+tsv: tsvs/giraffeokapi.tsv
+populations: 

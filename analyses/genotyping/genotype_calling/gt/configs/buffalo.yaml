@@ -1,0 +1,10 @@
+ingroup: buffalo
+results_subdir: buffalo
+ref:
+  name: Cow
+  fa: /davidData/genis/references/bosTau9/bosTau9.fa.gz
+  fai: /davidData/genis/references/bosTau9/bosTau9.fa.gz.fai
+sites: /home/genis/other/buffalo/sites_filters/all/beds/autosome_rep_het_dep.regions
+tsv: tsvs/buffalo.tsv
+populations:
+tmp_dir: results/buffalo/tmp

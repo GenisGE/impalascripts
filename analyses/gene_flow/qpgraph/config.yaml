@@ -1,0 +1,26 @@
+
+
+R: /home/krishang/software/R/R-3.6.1.kelly/my_install/bin/Rscript
+BLOCKLEN: 5e6
+MAXMISS: 0.9
+
+## modify:
+OUTMAIN: "results_notimepolice"
+PLINK: "/home/genis/impala/analyses/goatMapV3/qpgraph/plink/merged_snps_filtered_withref"
+IND_POP: "/home/genis/impala/analyses/goatMapV3/qpgraph2/ind_pop.info"
+USEPOPS:
+  - Etosha
+  - Chobe1
+  - Shangani 
+  - MasaiMara 
+  - Tsavo 
+  - Goat
+OUTGROUP: Goat
+NRUNS: 5 ## 
+START_PER_RUN: 80  ## in total 5 * 80 graphs per N admixture events
+TIMEPOLICE: 0 ## 1: enabled. 0: disabled
+ADMIX_EVENTS:
+  - 0
+  - 1
+  - 2
+  - 3

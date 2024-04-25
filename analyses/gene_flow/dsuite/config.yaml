@@ -1,0 +1,23 @@
+vcf: /home/genis/impala/analyses/goatMapV3/load_called_genos/results/vcf/annotated_variants_conservation.vcf.gz
+chroms: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/allGoatAutosomes.list
+outbig: /emc/genis/impala/dstats_bcf
+outmain: results
+ref: /davidData/genis/impala/ref/goat/goat_ref_renamed.fa.gz
+tree: /home/genis/impala/analyses/goatMapV3/dstats_calledgenos/impala_tree.nwk
+samples:
+ 2041_Chobe1: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/2041.bam
+ 7829_Chobe2: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/7829.bam
+ 44_Samburu: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/44.bam
+ 54_Tsavo: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/54.bam
+ 3_MasaiMara: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/3.bam
+ 2076_Etosha: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/2076.bam
+ 939_Ovita: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/939.bam
+ 3934_Selous: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/3934.bam
+ 5454_Ugalla: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/5454.bam
+ 4658_LakeMburu: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/4658.bam
+ 4558_Kafue: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/4558.bam
+ 4555_Luangwa: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/4555.bam
+ 1621_ManaPools: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/1621.bam
+ 1508_Shangani: /davidData/genis/impala/qc_mapping_collapse/goatRef/bam/1508.bam
+filters:
+ bed: /home/genis/impala/localSitesQC/goatMap/allRegionsFiles2/autosome_map_inb_rep_dep.bed

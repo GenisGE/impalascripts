@@ -1,0 +1,24 @@
+BEDTOOLS=/home/genis/software/bedtools2/bin/bedtools
+
+bedall=/home/genis/impala/localSitesQC/allRegionsFiles/allGoatAutoXchrs.bed
+
+badlow=/home/genis/impala/localSitesQC/depth/bedFiles/remove_depth_lowDepth
+badhih=/home/genis/impala/localSitesQC/depth/bedFiles/remove_depth_highDepth
+
+badall=/home/genis/impala/localSitesQC/depth/bedFiles/remove_depth_all
+
+$BEDTOOLS sort -i ${badlow}.bed > ${badlow}_merged.bed
+$BEDTOOLS merge -i ${badlow}_merged.bed > ${badlow}_merged_sorted.bed
+
+$BEDTOOLS sort -i ${badhigh}.bed > ${badhigh}_merged.bed
+$BEDTOOLS merge -i ${badhigh}_merged.bed > ${badhigh}_merged_sorted.bed
+
+$BEDTOOLS sort -i ${badlow}.bed > ${badlow}_merged.bed
+$BEDTOOLS merge -i ${badlow}_merged.bed > ${badlow}_merged_sorted.bed
+
+$BEDTOOLS sort -i ${badhigh}.bed > ${badhigh}_merged.bed
+$BEDTOOLS merge -i ${badhigh}_merged.bed > ${badhigh}_merged_sorted.bed
+
+cat $badlow.bed $badhigh.bed > ${badall}_unmerged_unsorted.bed
+
+$BEDTOOLS sort -i ${badall}_unmerged_unsorted.bed > ${badall}_unmerged.bed

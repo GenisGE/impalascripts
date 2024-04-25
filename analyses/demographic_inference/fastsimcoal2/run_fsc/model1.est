@@ -1,0 +1,27 @@
+// Search ranges and rules file
+// ****************************
+
+[PARAMETERS]
+//#isInt? #name   #dist.#min  #max
+//all Ns are in number of diploid individuals
+1  NPOP0	unif	500	100000	output	bounded
+1  NPOP1	unif	500	100000	output	bounded
+1  NPOP2	unif	500	100000	output	bounded
+1  NPOP3	unif	500	100000	output	bounded
+1  NANC1    unif    500    200000  output	bounded
+1  NANC2    unif    500    200000  output	bounded
+1  NANC3    unif    500    200000  output	bounded
+
+1  TDIV1	unif	10	5e4	output	bounded
+1  TADD1	unif	10	5e4	output	bounded
+1  TADD2	unif	10	5e4	output	bounded
+
+[RULES]
+
+[COMPLEX PARAMETERS]
+0  RES1  = NANC1/NPOP1     output
+0  RES2  = NANC2/NPOP2     output
+0  RES3  = NANC3/NPOP0     output
+
+1  TDIV2  = TDIV1+TADD1      output
+1  TDIV3  = TDIV2+TADD2      output
